@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:italk/models/chat.dart';
 import 'package:italk/models/user.dart';
+import 'package:italk/pages/chat_screen.dart';
 import 'package:italk/services/i_talk_base.dart';
 import 'package:italk/widgets/chat_item_view.dart';
 
@@ -69,11 +70,22 @@ class _ChatsScreenState extends State<ChatsScreen> {
                               ),
                             )
                           : ListView.builder(
-                              itemBuilder: (e, i) => ChatItemView(
-                                receiver: userChats[i].users.firstWhere(
-                                      (element) =>
-                                          element.userId != user.userId,
+                              itemBuilder: (e, i) => GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (c) => ChatScreen(
+                                        chatId: userChats[i].chatId,
+                                      ),
                                     ),
+                                  );
+                                },
+                                child: ChatItemView(
+                                  receiver: userChats[i].users.firstWhere(
+                                        (element) =>
+                                            element.userId != user.userId,
+                                      ),
+                                ),
                               ),
                               itemCount: userChats.length,
                             )),

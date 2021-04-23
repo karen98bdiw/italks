@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:italk/models/chat.dart';
+import 'package:italk/models/message.dart';
 import 'package:italk/services/i_talk_base.dart';
 import 'package:italk/utils/api_paths.dart';
 import '../models/user.dart' as custom;
@@ -59,9 +60,13 @@ class ChatServices {
 
   Future<Chat> getChatById({String id}) async {
     try {
-      var res = await store.collection(chatsPath).doc(id).get();
-      if (res.exists) {
-        return Chat.fromJson(res.data());
+      var res = await store
+          .collection(chatsPath)
+          .where("chatId", isEqualTo: "$id")
+          .get();
+      if (res.docs.length > 0) {
+        print(res.docs.length);
+        return Chat.fromJson(res.docs[0].data());
       }
       return null;
     } catch (e) {
@@ -88,6 +93,26 @@ class ChatServices {
     } catch (e) {
       print(e.toString());
       return [];
+    }
+  }
+
+  Future<bool> sendMessage({String chatId, Message message}) async {
+    try {
+      var res = await store
+          .collection(chatsPath)
+          .where("chatId", isEqualTo: "$chatId")
+          .get();
+      store.collection(chatsPath).doc(res.docs[0].id).update(
+        {
+          "messages": FieldValue.arrayUnion(
+            [message.toJson()],
+          )
+        },
+      );
+      return true;
+    } catch (e) {
+      print(e.toString());
+      return false;
     }
   }
 }
