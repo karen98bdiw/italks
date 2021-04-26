@@ -24,7 +24,7 @@ class ChatServices {
       chat.users.add(firstUser);
       chat.users.add(secondUser);
 
-      await store.collection(chatsPath).doc().set(chat.toJson());
+      await store.collection(chatsPath).doc(chat.chatId).set(chat.toJson());
 
       var res =
           await getChatWithUser(firstUser: firstUser, secondUser: secondUser);
@@ -50,8 +50,18 @@ class ChatServices {
         }
         return false;
       }, orElse: () => null);
-
-      return Chat.fromJson(chat) ?? null;
+      var curent = Chat.fromJson(chat);
+      var a = [];
+      var mes = await store
+          .collection(chatsPath)
+          .doc(curent.chatId)
+          .collection("mess")
+          .get();
+      for (int i = 0; i < mes.docs.length; i++) {
+        a.add(Message.fromJson(mes.docs[i]));
+      }
+      curent.messages = a;
+      return curent;
     } catch (e) {
       print("error while get chat with user" + e.toString());
       return null;
@@ -60,15 +70,9 @@ class ChatServices {
 
   Future<Chat> getChatById({String id}) async {
     try {
-      var res = await store
-          .collection(chatsPath)
-          .where("chatId", isEqualTo: "$id")
-          .get();
-      if (res.docs.length > 0) {
-        print(res.docs.length);
-        return Chat.fromJson(res.docs[0].data());
-      }
-      return null;
+      var res = await store.collection(chatsPath).doc(id).get();
+
+      return Chat.fromJson(res.data());
     } catch (e) {
       print(e.toString());
       return null;
@@ -98,21 +102,29 @@ class ChatServices {
 
   Future<bool> sendMessage({String chatId, Message message}) async {
     try {
-      var res = await store
+      var res = store
           .collection(chatsPath)
-          .where("chatId", isEqualTo: "$chatId")
-          .get();
-      store.collection(chatsPath).doc(res.docs[0].id).update(
-        {
-          "messages": FieldValue.arrayUnion(
-            [message.toJson()],
-          )
-        },
-      );
+          .doc(chatId)
+          .collection("mess")
+          .add(message.toJson());
       return true;
     } catch (e) {
       print(e.toString());
       return false;
     }
+  }
+
+  getMessages({String id}) {
+    print(id);
+    var res =
+        store.collection(chatsPath).doc(id).collection("mess").snapshots();
+
+    // List<Message> a = [];
+
+    // for (int i = 0; i < res.docs.length; i++) {
+    //   a.add(Message.fromJson(res.docs[i]));
+    // }
+
+    return res;
   }
 }
